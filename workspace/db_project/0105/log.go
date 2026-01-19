@@ -1,6 +1,7 @@
 package db0105
 
 import (
+	"io"
 	"os"
 )
 
@@ -25,6 +26,20 @@ func (log *Log) Write(ent *Entry) error {
 	return log.fp.Sync() // fsync
 }
 
-func (log *Log) Read(ent *Entry) (eof bool, err error)
+func (log *Log) Read(ent *Entry) (eof bool, err error) {
+	err = ent.Decode(log.fp)
+
+	if err == io.EOF {
+		return true, nil
+	} else if err == io.ErrUnexpectedEOF {
+		return true, nil
+	} else if err == ErrBadSum {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	} else {
+		return false, nil
+	}
+}
 
 // QzBQWVJJOUhU https://trialofcode.org/

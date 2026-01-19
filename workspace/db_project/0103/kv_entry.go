@@ -2,6 +2,7 @@ package db0103
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 )
 
@@ -46,6 +47,10 @@ func (ent *Entry) Decode(r io.Reader) error {
 		ent.val = data[klen:]
 	}
 	return nil
+}
+
+func (ent Entry) String() string {
+	return fmt.Sprintf("Entry: {Key: %v, Val: %v, Deleted: %v}", string(ent.key), string(ent.val), ent.deleted)
 }
 
 // QzBQWVJJOUhU https://trialofcode.org/

@@ -12,14 +12,18 @@ type Entry struct {
 	val []byte
 }
 
-func (ent *Entry) Encode() io.Writer {
+func (ent *Entry) Encode() []byte {
+	keyLen := uint32(len(ent.key))
+	valLen := uint32(len(ent.val))
+
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, uint32(len(ent.key)))
-	binary.Write(buf, binary.LittleEndian, uint32(len(ent.val)))
+
+	binary.Write(buf, binary.LittleEndian, keyLen)
+	binary.Write(buf, binary.LittleEndian, valLen)
 	buf.Write(ent.key)
 	buf.Write(ent.val)
 
-	return buf
+	return buf.Bytes()
 }
 
 func (ent *Entry) Decode(r io.Reader) error {

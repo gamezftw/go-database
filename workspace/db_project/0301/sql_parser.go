@@ -1,5 +1,7 @@
 package db0301
 
+import "strings"
+
 type Parser struct {
 	buf string
 	pos int
@@ -38,9 +40,47 @@ func (p *Parser) skipSpaces() {
 	}
 }
 
-func (p *Parser) tryKeyword(kw string) bool
+func (p *Parser) tryKeyword(kw string) bool {
+	p.skipSpaces()
+	if p.pos >= len(p.buf) {
+		return false
+	}
 
-func (p *Parser) tryName() (string, bool)
+	originalPosition := p.pos
+
+	var keyword strings.Builder
+	for p.pos < len(p.buf) {
+		if isSeparator(p.buf[p.pos]) {
+			break
+		}
+		keyword.WriteByte(p.buf[p.pos])
+		p.pos += 1
+	}
+
+	if strings.EqualFold(kw, keyword.String()) {
+		return true
+	} else {
+		p.pos = originalPosition
+		return false
+	}
+}
+
+func (p *Parser) tryName() (string, bool) {
+	p.skipSpaces()
+	if p.pos >= len(p.buf) || !isNameStart(p.buf[p.pos]) {
+		return "", false
+	}
+
+	var keyword strings.Builder
+	for p.pos < len(p.buf) {
+		if !isNameContinue(p.buf[p.pos]) {
+			break
+		}
+		keyword.WriteString(string(p.buf[p.pos]))
+		p.pos += 1
+	}
+	return keyword.String(), true
+}
 
 func (p *Parser) isEnd() bool {
 	p.skipSpaces()

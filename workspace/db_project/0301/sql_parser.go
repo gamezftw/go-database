@@ -1,6 +1,8 @@
 package db0301
 
-import "strings"
+import (
+	"strings"
+)
 
 type Parser struct {
 	buf string
@@ -46,21 +48,16 @@ func (p *Parser) tryKeyword(kw string) bool {
 		return false
 	}
 
-	originalPosition := p.pos
-
-	var keyword strings.Builder
-	for p.pos < len(p.buf) {
-		if isSeparator(p.buf[p.pos]) {
-			break
-		}
-		keyword.WriteByte(p.buf[p.pos])
-		p.pos += 1
+	startPos, currPos := p.pos, p.pos
+	for currPos < len(p.buf) && !isSeparator(p.buf[currPos]) {
+		currPos += 1
 	}
 
-	if strings.EqualFold(kw, keyword.String()) {
+	if strings.EqualFold(kw, p.buf[startPos:currPos]) {
+		p.pos = currPos
 		return true
 	} else {
-		p.pos = originalPosition
+		p.pos = startPos
 		return false
 	}
 }
@@ -71,15 +68,11 @@ func (p *Parser) tryName() (string, bool) {
 		return "", false
 	}
 
-	var keyword strings.Builder
-	for p.pos < len(p.buf) {
-		if !isNameContinue(p.buf[p.pos]) {
-			break
-		}
-		keyword.WriteString(string(p.buf[p.pos]))
+	initPos := p.pos
+	for p.pos < len(p.buf) && isNameContinue(p.buf[p.pos]) {
 		p.pos += 1
 	}
-	return keyword.String(), true
+	return p.buf[initPos:p.pos], true
 }
 
 func (p *Parser) isEnd() bool {

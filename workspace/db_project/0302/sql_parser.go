@@ -2,6 +2,8 @@ package db0302
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -35,6 +37,18 @@ func isNameContinue(ch byte) bool {
 }
 func isSeparator(ch byte) bool {
 	return ch < 128 && !isNameContinue(ch)
+}
+func isDigitSymbolPrefix(ch byte) bool {
+	return ch == '-' || ch == '+'
+}
+func isQuote(ch byte) bool {
+	return ch == '"' || ch == '\''
+}
+func isBackslash(ch byte) bool {
+	return ch == '\\'
+}
+func isEscapable(ch byte) bool {
+	return isQuote(ch) || isBackslash(ch)
 }
 
 func (p *Parser) skipSpaces() {
@@ -84,9 +98,71 @@ func (p *Parser) parseValue(out *Cell) error {
 	}
 }
 
-func (p *Parser) parseString(out *Cell) error
+func (p *Parser) parseString(out *Cell) error {
+	start, cur := p.pos, p.pos
+	if !isQuote(p.buf[cur]) {
+		return errors.New("invalid string")
+	}
+	cur += 1 // skip initial quote
 
-func (p *Parser) parseInt(out *Cell) (err error)
+	tempStart := start + 1
+	str := make([]byte, 0) // TODO: replace this with slice of length of len(p.buf) - p.pos? would this improve performacne since there would be no copying of the slice
+	for cur < len(p.buf) {
+		curCh := p.buf[cur]
+		if isBackslash(curCh) && isEscapable(p.buf[cur+1]) {
+			str = append(str, []byte(p.buf[tempStart:cur])...)
+			str = append(str, p.buf[cur+1])
+			cur += 2
+			tempStart = cur
+		} else if isQuote(curCh) {
+			break
+		} else {
+			cur += 1
+		}
+	}
+	if !isQuote(p.buf[cur]) {
+		return errors.New("missing quotes")
+	}
+
+	p.pos = cur + 1
+	out.Type = TypeStr
+	if len(str) != 0 {
+		str = append(str, []byte(p.buf[tempStart:cur])...)
+		out.Str = str
+	} else {
+		out.Str = []byte(p.buf[start+1 : cur])
+	}
+
+	return nil
+}
+
+func (p *Parser) parseInt(out *Cell) (err error) {
+	start, cur := p.pos, p.pos
+	ch := p.buf[p.pos]
+
+	fmt.Println(p.buf[start:cur])
+
+	if isDigitSymbolPrefix(ch) {
+		cur += 1
+	}
+	fmt.Println(p.buf[start:cur])
+
+	for cur < len(p.buf) {
+		curCh := p.buf[cur]
+		if isDigit(curCh) {
+			cur += 1
+			continue
+		} else if isSpace(curCh) {
+			break
+		} else {
+			return errors.New("invalid int value")
+		}
+	}
+	p.pos = cur
+	out.Type = TypeI64
+	out.I64, err = strconv.ParseInt(p.buf[start:cur], 10, 64)
+	return err
+}
 
 func (p *Parser) isEnd() bool {
 	p.skipSpaces()
